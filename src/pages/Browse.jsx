@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, SlidersHorizontal, X, Zap, Code2, PenTool, BarChart3, Palette, Server, Briefcase, GraduationCap } from 'lucide-react'
+import { Search, SlidersHorizontal, X, Zap, Code2, PenTool, BarChart3, Palette, Server, Briefcase, GraduationCap, Loader2 } from 'lucide-react'
 import SkillCard from '../components/SkillCard'
-import { SKILLS, CATEGORIES, PLATFORMS, searchSkills } from '../data/skills'
+import { CATEGORIES, PLATFORMS } from '../data/skills'
+import { fetchSkills } from '../lib/skills'
 
 const ICON_MAP = { Zap, Code2, PenTool, BarChart3, Palette, Server, Briefcase, GraduationCap }
 
@@ -15,6 +16,8 @@ const SORT_OPTIONS = [
 export default function Browse() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [showFilters, setShowFilters] = useState(false)
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const query = searchParams.get('q') || ''
   const category = searchParams.get('category') || ''
@@ -31,10 +34,12 @@ export default function Browse() {
     setSearchParams(next)
   }
 
-  const results = useMemo(() =>
-    searchSkills(query, { category, platform, sort }),
-    [query, category, platform, sort]
-  )
+  useEffect(() => {
+    setLoading(true)
+    fetchSkills({ query, category, platform, sort })
+      .then(setResults)
+      .finally(() => setLoading(false))
+  }, [query, category, platform, sort])
 
   const activeFilterCount = [category, platform].filter(Boolean).length
 
@@ -43,7 +48,7 @@ export default function Browse() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-surface-900 mb-2">Browse skills</h1>
-        <p className="text-surface-500">Explore {SKILLS.length}+ community-built skills</p>
+        <p className="text-surface-500">Explore {results.length}+ community-built skills</p>
       </div>
 
       {/* Search & Filter Bar */}

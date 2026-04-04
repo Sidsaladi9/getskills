@@ -6,7 +6,8 @@ import {
   Users, BookOpen, Trophy, ChevronRight, Copy, Check, TrendingUp
 } from 'lucide-react'
 import SkillCard from '../components/SkillCard'
-import { SKILLS, CATEGORIES, SKILL_OF_THE_DAY, getFeaturedSkills } from '../data/skills'
+import { CATEGORIES } from '../data/skills'
+import { fetchFeaturedSkills, fetchSkillOfTheDay } from '../lib/skills'
 
 const ICON_MAP = { Zap, Code2, PenTool, BarChart3, Palette, Server, Briefcase, GraduationCap }
 
@@ -20,10 +21,16 @@ const STATS = [
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [copied, setCopied] = useState(false)
-  const featured = getFeaturedSkills()
+  const [featured, setFeatured] = useState([])
+  const [skillOfDay, setSkillOfDay] = useState(null)
+
+  useEffect(() => {
+    fetchFeaturedSkills().then(setFeatured)
+    fetchSkillOfTheDay().then(setSkillOfDay)
+  }, [])
 
   const handleCopyInstall = () => {
-    navigator.clipboard.writeText(SKILL_OF_THE_DAY.skillCode)
+    navigator.clipboard.writeText(skillOfDay.skillCode)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -101,7 +108,7 @@ export default function Home() {
       </section>
 
       {/* Skill of the Day */}
-      {SKILL_OF_THE_DAY && (
+      {skillOfDay && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex items-center gap-2 mb-8">
             <TrendingUp className="w-5 h-5 text-amber-500" />
@@ -115,16 +122,16 @@ export default function Home() {
                   <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-sm font-medium">Featured</span>
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-semibold text-surface-700">{SKILL_OF_THE_DAY.stars}</span>
+                    <span className="text-sm font-semibold text-surface-700">{skillOfDay.stars}</span>
                   </div>
-                  <span className="text-sm text-surface-400">{SKILL_OF_THE_DAY.installs.toLocaleString()} installs</span>
+                  <span className="text-sm text-surface-400">{skillOfDay.installs.toLocaleString()} installs</span>
                 </div>
 
-                <h3 className="text-2xl font-bold text-surface-900 mb-3">{SKILL_OF_THE_DAY.title}</h3>
-                <p className="text-surface-500 leading-relaxed mb-6">{SKILL_OF_THE_DAY.description}</p>
+                <h3 className="text-2xl font-bold text-surface-900 mb-3">{skillOfDay.title}</h3>
+                <p className="text-surface-500 leading-relaxed mb-6">{skillOfDay.description}</p>
 
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {SKILL_OF_THE_DAY.tags.map(tag => (
+                  {skillOfDay.tags.map(tag => (
                     <span key={tag} className="px-3 py-1 bg-surface-100 text-surface-600 text-sm rounded-lg">
                       #{tag}
                     </span>
@@ -133,7 +140,7 @@ export default function Home() {
 
                 <div className="flex items-center gap-3">
                   <Link
-                    to={`/skill/${SKILL_OF_THE_DAY.id}`}
+                    to={`/skill/${skillOfDay.id}`}
                     className="px-6 py-3 gradient-bg text-white font-semibold rounded-lg hover:opacity-90 transition-opacity no-underline inline-flex items-center gap-2"
                   >
                     View skill <ArrowRight className="w-4 h-4" />
@@ -149,7 +156,7 @@ export default function Home() {
               </div>
 
               <div className="code-block p-5 overflow-auto max-h-72">
-                <pre className="text-sm whitespace-pre-wrap">{SKILL_OF_THE_DAY.skillCode}</pre>
+                <pre className="text-sm whitespace-pre-wrap">{skillOfDay.skillCode}</pre>
               </div>
             </div>
           </div>

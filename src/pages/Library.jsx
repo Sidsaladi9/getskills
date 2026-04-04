@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Bookmark, FolderPlus, Search, Grid3X3, List, Crown, Plus, Sparkles } from 'lucide-react'
+import { Bookmark, FolderPlus, Search, Grid3X3, List, Crown, Plus, Sparkles, Loader2 } from 'lucide-react'
 import SkillCard from '../components/SkillCard'
-import { SKILLS } from '../data/skills'
+import { fetchSkillsByIds } from '../lib/skills'
 import { useApp } from '../context/AppContext'
 
 export default function Library() {
@@ -12,6 +12,19 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showNewCollection, setShowNewCollection] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
+  const [savedSkillObjects, setSavedSkillObjects] = useState([])
+  const [loadingSaved, setLoadingSaved] = useState(false)
+
+  useEffect(() => {
+    if (savedSkills.length > 0) {
+      setLoadingSaved(true)
+      fetchSkillsByIds(savedSkills)
+        .then(setSavedSkillObjects)
+        .finally(() => setLoadingSaved(false))
+    } else {
+      setSavedSkillObjects([])
+    }
+  }, [savedSkills])
 
   if (!user) {
     return (
@@ -31,7 +44,7 @@ export default function Library() {
     )
   }
 
-  const saved = SKILLS.filter(s => savedSkills.includes(s.id))
+  const saved = savedSkillObjects
   const filtered = saved.filter(s =>
     !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase())
   )

@@ -1,19 +1,45 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Star, Download, Bookmark, BookmarkCheck, Copy, Check, ArrowLeft,
-  Calendar, RefreshCw, Lock, Share2, Flag, ChevronRight, ExternalLink
+  Calendar, RefreshCw, Lock, Share2, Flag, ChevronRight, ExternalLink, Loader2
 } from 'lucide-react'
-import { SKILLS, CATEGORIES, PLATFORMS } from '../data/skills'
+import { CATEGORIES, PLATFORMS } from '../data/skills'
 import { useApp } from '../context/AppContext'
+import { fetchSkillBySlug, fetchSkills, fetchReviews, trackInstall } from '../lib/skills'
 import SkillCard from '../components/SkillCard'
 
 export default function SkillDetail() {
   const { id } = useParams()
-  const skill = SKILLS.find(s => s.id === id)
+  const [skill, setSkill] = useState(null)
+  const [relatedSkills, setRelatedSkills] = useState([])
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
   const { user, toggleSave, isSkillSaved, canSaveMore, isPro } = useApp()
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+
+  useEffect(() => {
+    setLoading(true)
+    fetchSkillBySlug(id).then(s => {
+      setSkill(s)
+      if (s) {
+        fetchSkills({ category: s.category }).then(all =>
+          setRelatedSkills(all.filter(r => r.id !== s.id && r.slug !== s.slug).slice(0, 3))
+        )
+        fetchReviews(s.id).then(setReviews)
+      }
+      setLoading(false)
+    })
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin mx-auto" />
+      </div>
+    )
+  }
 
   if (!skill) {
     return (
@@ -27,11 +53,11 @@ export default function SkillDetail() {
   const category = CATEGORIES.find(c => c.id === skill.category)
   const platform = PLATFORMS.find(p => p.id === skill.platform)
   const saved = isSkillSaved(skill.id)
-  const relatedSkills = SKILLS.filter(s => s.category === skill.category && s.id !== skill.id).slice(0, 3)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(skill.skillCode)
     setCopied(true)
+    trackInstall(skill.id)
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -241,18 +267,19 @@ export default function SkillDetail() {
 
               {activeTab === 'reviews' && (
                 <div className="space-y-6">
-                  {[
-                    { name: 'Alex M.', rating: 5, comment: 'This skill saves me hours every week. The output quality is fantastic.', date: '2 days ago' },
-                    { name: 'Jordan K.', rating: 5, comment: 'Exactly what I was looking for. Works great with Claude Code.', date: '1 week ago' },
-                    { name: 'Sam T.', rating: 4, comment: 'Very useful! Would love to see support for more frameworks.', date: '2 weeks ago' },
-                  ].map((review, i) => (
-                    <div key={i} className="flex gap-4 pb-6 border-b border-surface-100 last:border-0">
+                  {reviews.map((review, i) => {
+                    const name = review.user_name || review.name || 'Anonymous'
+                    const date = review.created_at
+                      ? new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : review.date || ''
+                    return (
+                    <div key={review.id || i} className="flex gap-4 pb-6 border-b border-surface-100 last:border-0">
                       <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-sm shrink-0">
-                        {review.name.charAt(0)}
+                        {name.charAt(0)}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-surface-900 text-sm">{review.name}</span>
+                          <span className="font-semibold text-surface-900 text-sm">{name}</span>
                           <div className="flex items-center gap-0.5">
                             {Array(5).fill(0).map((_, j) => (
                               <Star
@@ -261,12 +288,16 @@ export default function SkillDetail() {
                               />
                             ))}
                           </div>
-                          <span className="text-xs text-surface-400">{review.date}</span>
+                          <span className="text-xs text-surface-400">{date}</span>
                         </div>
                         <p className="text-sm text-surface-600">{review.comment}</p>
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
+                  {reviews.length === 0 && (
+                    <p className="text-sm text-surface-400 text-center py-6">No reviews yet. Be the first!</p>
+                  )}
                 </div>
               )}
             </div>

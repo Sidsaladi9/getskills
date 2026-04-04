@@ -19,7 +19,7 @@ export default function SkillCard({ skill, featured = false }) {
 
   return (
     <Link
-      to={`/skill/${skill.id}`}
+      to={`/skill/${skill.slug || skill.id}`}
       className={`skill-card block bg-white rounded-xl border border-surface-200 p-6 no-underline text-left transition-all ${
         featured ? 'gradient-border' : ''
       }`}

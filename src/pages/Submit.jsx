@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Upload, AlertCircle, Check, Info } from 'lucide-react'
+import { Upload, AlertCircle, Check, Info, Loader2 } from 'lucide-react'
 import { CATEGORIES, PLATFORMS } from '../data/skills'
 import { useApp } from '../context/AppContext'
+import { submitSkill } from '../lib/skills'
 
 export default function Submit() {
-  const { user, isPro } = useApp()
+  const { user, rawUser, isPro } = useApp()
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -18,9 +21,20 @@ export default function Submit() {
 
   const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }))
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    setSubmitted(true)
+    setError('')
+    setSubmitting(true)
+    const result = await submitSkill({
+      ...form,
+      authorId: rawUser?.id || null,
+    })
+    setSubmitting(false)
+    if (result.success) {
+      setSubmitted(true)
+    } else {
+      setError(result.error || 'Failed to submit skill')
+    }
   }
 
   if (!user) {
