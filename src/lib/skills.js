@@ -216,10 +216,17 @@ export async function fetchDailyStats(skillId) {
   return data || []
 }
 
-// Increment install count (on copy)
-export async function trackInstall(skillId) {
-  if (!isSupabaseConfigured()) return
-  await supabase.rpc('increment_install_count', { skill_id: skillId })
+// Log a skill action (copy/download/view) — increments counters + daily rollup
+export async function trackInstall(skillId, action = 'copy') {
+  if (!isSupabaseConfigured() || !skillId) return
+  const { data: { user } = {} } = await supabase.auth.getUser()
+  await supabase.rpc('log_skill_event', {
+    p_skill_id: skillId,
+    p_user_id: user?.id || null,
+    p_action: action,
+    p_platform: null,
+    p_referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+  })
 }
 
 // Normalize Supabase row to match component expectations

@@ -37,6 +37,7 @@ export default function SkillDetail() {
     fetchSkillBySlug(id).then((s) => {
       setSkill(s)
       if (s) {
+        trackInstall(s.id, 'view')
         fetchSkills({ category: s.category }).then((all) =>
           setRelatedSkills(all.filter((r) => r.id !== s.id && r.slug !== s.slug).slice(0, 3))
         )
@@ -73,7 +74,7 @@ export default function SkillDetail() {
     if (!canView) return
     navigator.clipboard.writeText(skill.skillCode)
     setCopied(true)
-    trackInstall(skill.id)
+    trackInstall(skill.id, 'copy')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -88,7 +89,7 @@ export default function SkillDetail() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    trackInstall(skill.id)
+    trackInstall(skill.id, 'download')
     setDownloaded(true)
     setTimeout(() => setDownloaded(false), 2500)
   }
