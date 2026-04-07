@@ -1,220 +1,359 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
-  Search, ArrowRight, Sparkles, Zap, Code2, PenTool, BarChart3,
-  Palette, Server, Briefcase, GraduationCap, Star, Download,
-  Users, BookOpen, Trophy, ChevronRight, Copy, Check, TrendingUp
+  Search, ArrowRight, Zap, Code2, PenTool, BarChart3,
+  Palette, Server, Briefcase, GraduationCap, Star, TrendingUp,
+  ChevronRight, Copy, Check, Command, FileDown
 } from 'lucide-react'
 import SkillCard from '../components/SkillCard'
-import { CATEGORIES } from '../data/skills'
+import StatCard from '../components/StatCard'
+import CommandPalette from '../components/CommandPalette'
+import { SKILLS, CATEGORIES } from '../data/skills'
+import { fetchPlatformStats } from '../lib/skills'
+
+const CATEGORY_GRADIENTS = {
+  productivity: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+  coding: 'linear-gradient(135deg, #60a5fa, #3b82f6)',
+  writing: 'linear-gradient(135deg, #34d399, #10b981)',
+  data: 'linear-gradient(135deg, #a78bfa, #8b5cf6)',
+  design: 'linear-gradient(135deg, #f472b6, #ec4899)',
+  devops: 'linear-gradient(135deg, #fb923c, #f97316)',
+  business: 'linear-gradient(135deg, #22d3ee, #06b6d4)',
+  education: 'linear-gradient(135deg, #818cf8, #6366f1)',
+}
 import { fetchFeaturedSkills, fetchSkillOfTheDay } from '../lib/skills'
 
 const ICON_MAP = { Zap, Code2, PenTool, BarChart3, Palette, Server, Briefcase, GraduationCap }
 
-const STATS = [
-  { icon: BookOpen, label: 'Skills', value: '500+' },
-  { icon: Users, label: 'Users', value: '12K+' },
-  { icon: Download, label: 'Installs', value: '89K+' },
-  { icon: Trophy, label: 'Contributors', value: '200+' },
-]
+const SUGGESTION_CHIPS = ['git commits', 'code review', 'testing', 'documentation']
 
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [copied, setCopied] = useState(false)
+  const navigate = useNavigate()
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const [featured, setFeatured] = useState([])
   const [skillOfDay, setSkillOfDay] = useState(null)
+  const [copied, setCopied] = useState(false)
+  const [downloaded, setDownloaded] = useState(false)
+  const [stats, setStats] = useState({ skillCount: 0, totalInstalls: 0, avgRating: '0', categoryCount: 0 })
 
   useEffect(() => {
     fetchFeaturedSkills().then(setFeatured)
     fetchSkillOfTheDay().then(setSkillOfDay)
+    fetchPlatformStats().then(setStats)
   }, [])
 
-  const handleCopyInstall = () => {
+  // Global Cmd+K listener
+  useEffect(() => {
+    const handleKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
+  const handleCopySkillOfDay = () => {
+    if (!skillOfDay) return
     navigator.clipboard.writeText(skillOfDay.skillCode)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  return (
-    <div className="min-h-screen">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="hero-glow bg-primary-500 -top-40 -left-40" />
-        <div className="hero-glow bg-accent-500 -top-20 right-0" />
+  const handleDownloadSkillOfDay = () => {
+    if (!skillOfDay) return
+    const blob = new Blob([skillOfDay.skillCode], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${skillOfDay.slug || skillOfDay.id}.md`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setDownloaded(true)
+    setTimeout(() => setDownloaded(false), 2500)
+  }
 
+  // Trending: top 5 by installs
+  const trending = [...SKILLS].sort((a, b) => b.installs - a.installs).slice(0, 5)
+
+  // Category skill counts
+  const categoryCounts = CATEGORIES.reduce((acc, cat) => {
+    acc[cat.id] = SKILLS.filter((s) => s.category === cat.id).length
+    return acc
+  }, {})
+
+  return (
+    <div className="min-h-screen bg-[#FAFAF8]">
+      {/* Command Palette */}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-white to-[#FAFAF8]" />
+        {/* Glow orbs */}
+        <div className="hero-glow hero-glow-left" />
+        <div className="hero-glow hero-glow-right" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 relative">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-50 text-primary-600 text-sm font-medium mb-6 animate-fade-in-up">
-              <Sparkles className="w-4 h-4" />
-              The open repository for AI skills
-            </div>
-
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-surface-900 tracking-tight mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              Discover & share{' '}
-              <span className="gradient-text">AI skills</span>
-              {' '}that supercharge your workflow
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-surface-900 tracking-tight mb-6 font-heading animate-fade-in">
+              Find skills that{' '}
+              <span className="gradient-text">accelerate your work</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-surface-500 max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              Browse 500+ community-built skills for Claude Code, Cursor, ChatGPT and more.
-              Copy, install, and start using them in seconds.
+            <p className="text-lg sm:text-xl text-surface-500 max-w-2xl mx-auto mb-10 animate-slide-up">
+              Browse community-built skills for Claude Code, Cursor, ChatGPT and more.
+              Copy, paste, and start using them in seconds.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3 max-w-xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <div className="relative flex-1 w-full">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
-                <input
-                  type="text"
-                  placeholder="Search skills... (e.g. 'test generator', 'git')"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && searchQuery) {
-                      window.location.href = `/browse?q=${encodeURIComponent(searchQuery)}`
-                    }
-                  }}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border border-surface-200 bg-white text-surface-900 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base shadow-sm"
-                />
-              </div>
-              <Link
-                to={searchQuery ? `/browse?q=${encodeURIComponent(searchQuery)}` : '/browse'}
-                className="w-full sm:w-auto px-8 py-4 gradient-bg text-white font-semibold rounded-xl hover:opacity-90 transition-opacity no-underline text-center"
+            {/* Search bar */}
+            <div className="max-w-xl mx-auto mb-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+              <button
+                onClick={() => setPaletteOpen(true)}
+                className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-surface-200 bg-white text-left shadow-sm hover:border-surface-300 hover:shadow-md transition-all group"
               >
-                Explore skills
-              </Link>
+                <Search className="w-5 h-5 text-surface-400 group-hover:text-surface-500" />
+                <span className="flex-1 text-surface-400 text-base">Search skills, categories, tags...</span>
+                <kbd className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-100 text-surface-400 text-xs font-mono">
+                  <Command className="w-3 h-3" />K
+                </kbd>
+              </button>
+            </div>
+
+            {/* Suggestion chips */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <span className="text-sm text-surface-400">Try:</span>
+              {SUGGESTION_CHIPS.map((chip) => (
+                <Link
+                  key={chip}
+                  to={`/browse?q=${encodeURIComponent(chip)}`}
+                  className="px-3.5 py-1.5 rounded-full bg-white border border-surface-200 text-sm text-surface-600 no-underline hover:border-[#FF6B6B] hover:text-[#FF6B6B] transition-colors"
+                >
+                  {chip}
+                </Link>
+              ))}
+            </div>
+
+            {/* Quick stats row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+              <StatCard
+                label="Skills Available"
+                value={stats.skillCount.toString()}
+                change="+12"
+                sparkData={[3, 5, 4, 7, 6, 8, 9, 7, 10, 12]}
+              />
+              <StatCard
+                label="Total Installs"
+                value={stats.totalInstalls.toLocaleString()}
+                change="+2.4K"
+                sparkData={[20, 25, 30, 28, 35, 40, 38, 45, 50, 55]}
+              />
+              <StatCard
+                label="Avg Rating"
+                value={String(stats.avgRating)}
+                change="+0.1"
+                sparkData={[4.5, 4.6, 4.6, 4.7, 4.7, 4.7, 4.8, 4.7, 4.8, 4.8]}
+              />
+              <StatCard
+                label="Categories"
+                value={stats.categoryCount.toString()}
+                sparkData={[8, 8, 8, 8, 8, 8, 8, 8, 8, 8]}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="border-y border-surface-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-surface-200">
-            {STATS.map(stat => {
-              const Icon = stat.icon
-              return (
-                <div key={stat.label} className="flex items-center justify-center gap-3 py-6">
-                  <Icon className="w-5 h-5 text-primary-500" />
-                  <div className="text-left">
-                    <div className="text-2xl font-bold text-surface-900">{stat.value}</div>
-                    <div className="text-xs text-surface-500">{stat.label}</div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Skill of the Day */}
+      {/* Featured Skill Spotlight */}
       {skillOfDay && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex items-center gap-2 mb-8">
             <TrendingUp className="w-5 h-5 text-amber-500" />
-            <h2 className="text-2xl font-bold text-surface-900">Skill of the Day</h2>
+            <h2 className="text-2xl font-bold text-surface-900 font-heading">Skill of the Day</h2>
           </div>
 
-          <div className="gradient-border p-8">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-sm font-medium">Featured</span>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-semibold text-surface-700">{skillOfDay.stars}</span>
+          <div className="rounded-2xl overflow-hidden border border-surface-200 bg-white shadow-sm">
+            {/* Category gradient header */}
+            <div className="h-2 gradient-bg" />
+            <div className="p-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-sm font-medium">Featured</span>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                      <span className="text-sm font-semibold text-surface-700">{skillOfDay.stars}</span>
+                    </div>
+                    <span className="text-sm text-surface-400">{skillOfDay.installs.toLocaleString()} installs</span>
                   </div>
-                  <span className="text-sm text-surface-400">{skillOfDay.installs.toLocaleString()} installs</span>
+
+                  <h3 className="text-2xl font-bold text-surface-900 font-heading mb-3">{skillOfDay.title}</h3>
+                  <p className="text-surface-500 leading-relaxed mb-6">{skillOfDay.description}</p>
+
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {skillOfDay.tags.map((tag) => (
+                      <span key={tag} className="px-3 py-1 bg-surface-100 text-surface-600 text-sm rounded-lg">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      onClick={handleDownloadSkillOfDay}
+                      className={`px-6 py-3 font-semibold rounded-xl inline-flex items-center gap-2 transition-all ${
+                        downloaded
+                          ? 'bg-emerald-500 text-white'
+                          : 'gradient-bg text-white hover:opacity-90'
+                      }`}
+                    >
+                      {downloaded ? <Check className="w-4 h-4" /> : <FileDown className="w-4 h-4" />}
+                      {downloaded ? 'Downloaded!' : 'Download .md'}
+                    </button>
+                    <button
+                      onClick={handleCopySkillOfDay}
+                      className={`px-6 py-3 border font-semibold rounded-xl inline-flex items-center gap-2 transition-colors ${
+                        copied
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                          : 'border-surface-200 text-surface-700 hover:border-[#FF6B6B] hover:text-[#FF6B6B]'
+                      }`}
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                    <Link
+                      to={`/skill/${skillOfDay.slug || skillOfDay.id}`}
+                      className="px-6 py-3 text-[#FF6B6B] font-semibold rounded-xl hover:bg-primary-50 transition-colors no-underline inline-flex items-center gap-2"
+                    >
+                      View details <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 </div>
 
-                <h3 className="text-2xl font-bold text-surface-900 mb-3">{skillOfDay.title}</h3>
-                <p className="text-surface-500 leading-relaxed mb-6">{skillOfDay.description}</p>
-
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {skillOfDay.tags.map(tag => (
-                    <span key={tag} className="px-3 py-1 bg-surface-100 text-surface-600 text-sm rounded-lg">
-                      #{tag}
-                    </span>
-                  ))}
+                <div className="bg-surface-900 rounded-xl p-5 overflow-auto max-h-72">
+                  <pre className="text-sm text-surface-300 whitespace-pre-wrap font-mono">{skillOfDay.skillCode}</pre>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <Link
-                    to={`/skill/${skillOfDay.id}`}
-                    className="px-6 py-3 gradient-bg text-white font-semibold rounded-lg hover:opacity-90 transition-opacity no-underline inline-flex items-center gap-2"
-                  >
-                    View skill <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <button
-                    onClick={handleCopyInstall}
-                    className="px-6 py-3 border border-surface-200 text-surface-700 font-semibold rounded-lg hover:bg-surface-50 transition-colors inline-flex items-center gap-2"
-                  >
-                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied!' : 'Copy skill'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="code-block p-5 overflow-auto max-h-72">
-                <pre className="text-sm whitespace-pre-wrap">{skillOfDay.skillCode}</pre>
               </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* Categories */}
+      {/* Trending Skills */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-surface-900 mb-4">Browse by category</h2>
-          <p className="text-surface-500 max-w-xl mx-auto">Find the perfect skill for your workflow across 8 categories</p>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold text-surface-900 font-heading">Trending Skills</h2>
+          <Link
+            to="/browse?sort=popular"
+            className="inline-flex items-center gap-1 text-[#FF6B6B] font-medium no-underline hover:opacity-80 transition-opacity text-sm"
+          >
+            View all <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {CATEGORIES.map(cat => {
-            const Icon = ICON_MAP[cat.icon]
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {trending.map((skill, index) => {
+            const cat = CATEGORIES.find(c => c.id === skill.category)
+            const grad = CATEGORY_GRADIENTS[skill.category] || 'linear-gradient(135deg, #FF6B6B, #FFA0A0)'
+            const Icon = ICON_MAP[cat?.icon]
             return (
               <Link
-                key={cat.id}
-                to={`/browse?category=${cat.id}`}
-                className={`group flex flex-col items-center gap-3 p-6 rounded-xl border border-surface-200 bg-white hover:border-primary-300 hover:shadow-lg transition-all no-underline`}
+                key={skill.id}
+                to={`/skill/${skill.slug || skill.id}`}
+                className={`stagger-item stagger-${index + 1} relative flex flex-col bg-white rounded-2xl border border-surface-200 overflow-hidden no-underline hover:shadow-lg hover:-translate-y-1 transition-all group`}
               >
-                <div className={`w-12 h-12 rounded-xl ${cat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                  {Icon && <Icon className={`w-6 h-6 ${cat.color}`} />}
+                {/* Gradient header with rank */}
+                <div
+                  className="relative h-20 flex items-center justify-between px-4"
+                  style={{ background: grad }}
+                >
+                  <span className="text-4xl font-extrabold text-white/30 font-heading">
+                    #{index + 1}
+                  </span>
+                  {Icon && (
+                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                  )}
                 </div>
-                <span className="font-semibold text-surface-700 text-sm">{cat.name}</span>
+
+                <div className="p-4 flex-1 flex flex-col">
+                  <h4 className="font-semibold text-surface-900 text-sm mb-1.5 font-heading line-clamp-1">
+                    {skill.title}
+                  </h4>
+                  <p className="text-xs text-surface-500 line-clamp-2 mb-3 flex-1">{skill.description}</p>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-surface-100">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      <span className="text-xs font-semibold text-surface-700">{skill.stars}</span>
+                    </div>
+                    <span className="text-xs text-surface-400">{skill.installs.toLocaleString()}</span>
+                  </div>
+                </div>
               </Link>
             )
           })}
         </div>
       </section>
 
-      {/* Featured Skills */}
-      <section className="bg-surface-50 border-y border-surface-200">
+      {/* Category Grid */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-surface-900 font-heading mb-4">Browse by Category</h2>
+          <p className="text-surface-500 max-w-xl mx-auto">Find the perfect skill for your workflow across {CATEGORIES.length} categories</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {CATEGORIES.map((cat, i) => {
+            const Icon = ICON_MAP[cat.icon]
+            return (
+              <Link
+                key={cat.id}
+                to={`/browse?category=${cat.id}`}
+                className={`stagger-item stagger-${i + 1} group flex flex-col items-center gap-3 p-6 rounded-xl border border-surface-200 bg-white hover:border-[#FF6B6B]/30 hover:shadow-lg transition-all no-underline`}
+              >
+                <div className={`w-12 h-12 rounded-xl ${cat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  {Icon && <Icon className={`w-6 h-6 ${cat.color}`} />}
+                </div>
+                <span className="font-semibold text-surface-700 text-sm">{cat.name}</span>
+                <span className="text-xs text-surface-400">{categoryCounts[cat.id] || 0} skills</span>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Top Rated / Featured Skills */}
+      <section className="border-t border-surface-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-bold text-surface-900 mb-2">Featured skills</h2>
+              <h2 className="text-3xl font-bold text-surface-900 font-heading mb-2">Top Rated Skills</h2>
               <p className="text-surface-500">Hand-picked by the community</p>
             </div>
             <Link
               to="/browse"
-              className="hidden sm:inline-flex items-center gap-1 text-primary-600 font-medium no-underline hover:text-primary-700 transition-colors"
+              className="hidden sm:inline-flex items-center gap-1 text-[#FF6B6B] font-medium no-underline hover:opacity-80 transition-opacity"
             >
               View all <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featured.slice(0, 6).map(skill => (
-              <SkillCard key={skill.id} skill={skill} />
+            {featured.slice(0, 6).map((skill, i) => (
+              <div key={skill.id} className={`stagger-item stagger-${i + 1}`}>
+                <SkillCard skill={skill} />
+              </div>
             ))}
           </div>
 
           <div className="text-center mt-8 sm:hidden">
             <Link
               to="/browse"
-              className="inline-flex items-center gap-1 text-primary-600 font-medium no-underline"
+              className="inline-flex items-center gap-1 text-[#FF6B6B] font-medium no-underline"
             >
               View all skills <ChevronRight className="w-4 h-4" />
             </Link>
@@ -222,60 +361,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it Works */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl font-bold text-surface-900 mb-4">How it works</h2>
-          <p className="text-surface-500 max-w-xl mx-auto">Three steps to supercharge your AI workflow</p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              step: '01',
-              title: 'Find a skill',
-              description: 'Search or browse 500+ skills across categories. Filter by platform, rating, or use case.',
-              icon: Search,
-            },
-            {
-              step: '02',
-              title: 'Copy & install',
-              description: 'One-click copy the skill definition. Paste it into your AI tool\'s settings or skill folder.',
-              icon: Copy,
-            },
-            {
-              step: '03',
-              title: 'Use it instantly',
-              description: 'The skill is now available in your AI assistant. Use it by name or let it trigger automatically.',
-              icon: Zap,
-            },
-          ].map(item => {
-            const Icon = item.icon
-            return (
-              <div key={item.step} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-bg mb-5">
-                  <Icon className="w-7 h-7 text-white" />
-                </div>
-                <div className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-2">Step {item.step}</div>
-                <h3 className="text-xl font-bold text-surface-900 mb-2">{item.title}</h3>
-                <p className="text-surface-500 leading-relaxed">{item.description}</p>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
       {/* CTA */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="gradient-bg rounded-2xl p-12 text-center text-white">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to level up?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold font-heading mb-4">Ready to level up?</h2>
           <p className="text-lg text-white/80 max-w-xl mx-auto mb-8">
             Join thousands of developers using GetSkills to work smarter with AI.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/signup"
-              className="px-8 py-3 bg-white text-primary-600 font-semibold rounded-xl hover:bg-surface-50 transition-colors no-underline"
+              className="px-8 py-3 bg-white text-[#FF6B6B] font-semibold rounded-xl hover:bg-surface-50 transition-colors no-underline"
             >
               Get started free
             </Link>

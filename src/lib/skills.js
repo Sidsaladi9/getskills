@@ -168,6 +168,54 @@ export async function submitSkill({ title, description, category, platform, tags
   return { success: true, skill: data }
 }
 
+// Fetch platform stats for home page stat cards
+export async function fetchPlatformStats() {
+  if (!isSupabaseConfigured()) {
+    return { skillCount: 12, totalInstalls: 92000, avgRating: 4.7, categoryCount: 8 }
+  }
+
+  // Get skill aggregates
+  const { data: skills } = await supabase
+    .from('skills')
+    .select('install_count, category')
+    .eq('status', 'approved')
+
+  if (!skills) return { skillCount: 12, totalInstalls: 92000, avgRating: 4.7, categoryCount: 8 }
+
+  const totalInstalls = skills.reduce((sum, s) => sum + (s.install_count || 0), 0)
+  const categories = new Set(skills.map(s => s.category))
+
+  // Get average rating from reviews
+  const { data: ratingData } = await supabase
+    .from('reviews')
+    .select('rating')
+
+  const avgRating = ratingData && ratingData.length > 0
+    ? (ratingData.reduce((sum, r) => sum + r.rating, 0) / ratingData.length).toFixed(1)
+    : '4.7'
+
+  return {
+    skillCount: skills.length,
+    totalInstalls,
+    avgRating,
+    categoryCount: categories.size,
+  }
+}
+
+// Fetch daily stats for a skill's sparkline
+export async function fetchDailyStats(skillId) {
+  if (!isSupabaseConfigured()) return []
+
+  const { data } = await supabase
+    .from('daily_skill_stats')
+    .select('date, copies, downloads, views')
+    .eq('skill_id', skillId)
+    .order('date', { ascending: true })
+    .limit(14)
+
+  return data || []
+}
+
 // Increment install count (on copy)
 export async function trackInstall(skillId) {
   if (!isSupabaseConfigured()) return

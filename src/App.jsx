@@ -9,6 +9,9 @@ import Pricing from './pages/Pricing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Library from './pages/Library'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import NotFound from './pages/NotFound'
 
 export default function App() {
   return (
@@ -24,6 +27,9 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />
