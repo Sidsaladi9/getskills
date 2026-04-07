@@ -8,8 +8,8 @@ import {
 import SkillCard from '../components/SkillCard'
 import StatCard from '../components/StatCard'
 import CommandPalette from '../components/CommandPalette'
-import { SKILLS, CATEGORIES } from '../data/skills'
-import { fetchPlatformStats } from '../lib/skills'
+import { CATEGORIES } from '../data/skills'
+import { fetchPlatformStats, fetchFeaturedSkills, fetchSkillOfTheDay, fetchSkills } from '../lib/skills'
 
 const CATEGORY_GRADIENTS = {
   productivity: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
@@ -21,8 +21,6 @@ const CATEGORY_GRADIENTS = {
   business: 'linear-gradient(135deg, #22d3ee, #06b6d4)',
   education: 'linear-gradient(135deg, #818cf8, #6366f1)',
 }
-import { fetchFeaturedSkills, fetchSkillOfTheDay } from '../lib/skills'
-
 const ICON_MAP = { Zap, Code2, PenTool, BarChart3, Palette, Server, Briefcase, GraduationCap }
 
 const SUGGESTION_CHIPS = ['git commits', 'code review', 'testing', 'documentation']
@@ -35,11 +33,13 @@ export default function Home() {
   const [copied, setCopied] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
   const [stats, setStats] = useState({ skillCount: 0, totalInstalls: 0, avgRating: '0', categoryCount: 0 })
+  const [allSkills, setAllSkills] = useState([])
 
   useEffect(() => {
     fetchFeaturedSkills().then(setFeatured)
     fetchSkillOfTheDay().then(setSkillOfDay)
     fetchPlatformStats().then(setStats)
+    fetchSkills({ sort: 'popular' }).then(setAllSkills)
   }, [])
 
   // Global Cmd+K listener
@@ -76,12 +76,12 @@ export default function Home() {
     setTimeout(() => setDownloaded(false), 2500)
   }
 
-  // Trending: top 5 by installs
-  const trending = [...SKILLS].sort((a, b) => b.installs - a.installs).slice(0, 5)
+  // Trending: top 5 by installs from live data
+  const trending = [...allSkills].sort((a, b) => (b.installs || 0) - (a.installs || 0)).slice(0, 5)
 
-  // Category skill counts
+  // Category skill counts from live data
   const categoryCounts = CATEGORIES.reduce((acc, cat) => {
-    acc[cat.id] = SKILLS.filter((s) => s.category === cat.id).length
+    acc[cat.id] = allSkills.filter((s) => s.category === cat.id).length
     return acc
   }, {})
 

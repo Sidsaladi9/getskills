@@ -10,7 +10,11 @@ export async function fetchSkills({ query, category, platform, sort } = {}) {
   let q = supabase.from('skills_with_stats').select('*')
 
   if (query) {
-    q = q.or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    // Escape PostgREST OR-filter special chars: , ( ) " *
+    const safe = query.replace(/[,()*"\\]/g, ' ').trim()
+    if (safe) {
+      q = q.or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
+    }
   }
   if (category) {
     q = q.eq('category', category)

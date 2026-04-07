@@ -401,7 +401,7 @@ create policy "profiles_insert" on public.profiles for insert with check (auth.u
 create policy "profiles_update" on public.profiles for update using (auth.uid() = id);
 
 -- SKILLS
-create policy "skills_select"  on public.skills for select using (status = 'approved');
+create policy "skills_select"  on public.skills for select using (status = 'approved' or auth.uid() = author_id);
 create policy "skills_insert"  on public.skills for insert with check (auth.uid() = author_id);
 create policy "skills_update"  on public.skills for update using (auth.uid() = author_id);
 create policy "skills_delete"  on public.skills for delete using (auth.uid() = author_id and status = 'pending');

@@ -5,7 +5,7 @@ import {
   Briefcase, GraduationCap, ChevronRight, Loader2, SlidersHorizontal
 } from 'lucide-react'
 import SkillCard from '../components/SkillCard'
-import { CATEGORIES, PLATFORMS, SKILLS } from '../data/skills'
+import { CATEGORIES, PLATFORMS } from '../data/skills'
 import { fetchSkills } from '../lib/skills'
 
 const ICON_MAP = { Zap, Code2, PenTool, BarChart3, Palette, Server, Briefcase, GraduationCap }
@@ -16,8 +16,7 @@ const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest' },
 ]
 
-// Collect all unique tags from skills data
-const ALL_TAGS = [...new Set(SKILLS.flatMap((s) => s.tags))].slice(0, 12)
+// Tags are derived from live results inside the component
 
 export default function Browse() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -155,7 +154,7 @@ export default function Browse() {
         {/* Tag Filter */}
         <div className="mb-6">
           <div className="flex flex-wrap gap-1.5">
-            {ALL_TAGS.map((t) => (
+            {[...new Set(results.flatMap((s) => s.tags || []))].slice(0, 12).map((t) => (
               <button
                 key={t}
                 onClick={() => updateParam('tag', tag === t ? '' : t)}

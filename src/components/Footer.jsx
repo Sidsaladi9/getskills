@@ -1,8 +1,13 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Sparkles } from 'lucide-react'
-import { SKILLS } from '../data/skills'
+import { fetchPlatformStats } from '../lib/skills'
 
 export default function Footer() {
+  const [count, setCount] = useState(100)
+  useEffect(() => {
+    fetchPlatformStats().then((s) => s?.skillCount && setCount(s.skillCount))
+  }, [])
   return (
     <footer className="bg-[#1a1a1a] text-surface-300 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -21,7 +26,7 @@ export default function Footer() {
               The open repository for AI skills. Discover, share, and install skills for Claude Code and beyond.
             </p>
             <p className="text-xs text-surface-500">
-              {SKILLS.length}+ skills and counting
+              {count}+ skills and counting
             </p>
           </div>
 

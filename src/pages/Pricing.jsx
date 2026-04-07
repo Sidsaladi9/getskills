@@ -191,19 +191,20 @@ export default function Pricing() {
             <div className="w-full py-3 rounded-xl bg-green-50 text-green-700 font-semibold text-center mb-6">
               Current plan
             </div>
-          ) : (
+          ) : user ? (
             <button
-              onClick={user ? handleUpgrade : undefined}
+              onClick={handleUpgrade}
               className="w-full py-3 rounded-xl bg-[#FF6B6B] text-white font-semibold hover:bg-[#E85555] transition-colors mb-6"
             >
-              {user ? (
-                'Upgrade to Pro'
-              ) : (
-                <Link to="/signup" className="text-white no-underline">
-                  Upgrade to Pro
-                </Link>
-              )}
+              Upgrade to Pro
             </button>
+          ) : (
+            <Link
+              to="/signup"
+              className="block w-full py-3 rounded-xl bg-[#FF6B6B] text-white font-semibold hover:bg-[#E85555] transition-colors mb-6 text-center no-underline"
+            >
+              Upgrade to Pro
+            </Link>
           )}
 
           <div className="space-y-3">

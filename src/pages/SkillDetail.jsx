@@ -393,9 +393,9 @@ export default function SkillDetail() {
                 {activeTab === 'details' && (
                   <div>
                     <div className="prose prose-surface max-w-none mb-8">
-                      {skill.longDescription.split('\\n\\n').map((para, i) => (
+                      {(skill.longDescription || skill.description || '').split(/\n\n+/).map((para, i) => (
                         <p key={i} className="text-surface-600 leading-relaxed mb-4 whitespace-pre-wrap">
-                          {para.replace(/\\n/g, '\n')}
+                          {para}
                         </p>
                       ))}
                     </div>
