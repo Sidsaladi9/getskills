@@ -7,7 +7,7 @@ export async function fetchSkills({ query, category, platform, sort } = {}) {
     return mockSearch(query, { category, platform, sort })
   }
 
-  let q = supabase.from('skills_with_stats').select('*')
+  let q = supabase.from('skills_with_stats').select('*').range(0, 9999)
 
   if (query) {
     // Escape PostgREST OR-filter special chars: , ( ) " *
