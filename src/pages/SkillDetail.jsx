@@ -220,7 +220,16 @@ export default function SkillDetail() {
                 )}
               </div>
 
-              <p className="text-lg text-surface-500 leading-relaxed mb-5">{skill.description}</p>
+              <p className="text-lg text-surface-500 leading-relaxed mb-3">{skill.description}</p>
+
+              {skill.sourceUrl && (
+                <p className="text-xs text-surface-400 mb-5">
+                  Source:{' '}
+                  <a href={skill.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF6B6B] hover:underline">
+                    {skill.sourceName || skill.sourceUrl}
+                  </a>
+                </p>
+              )}
 
               {/* Meta row */}
               <div className="flex flex-wrap items-center gap-5 mb-5">

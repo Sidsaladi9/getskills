@@ -257,5 +257,7 @@ function normalizeSkill(row) {
     isPremium: row.is_premium ?? row.isPremium ?? false,
     isFeatured: row.is_featured ?? row.isFeatured ?? false,
     skillCode: row.skill_code || row.skillCode || '',
+    sourceName: row.source_name || row.sourceName || '',
+    sourceUrl: row.source_url || row.sourceUrl || '',
   }
 }

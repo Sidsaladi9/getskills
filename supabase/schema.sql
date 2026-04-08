@@ -217,6 +217,8 @@ select
   s.download_count,
   s.view_count,
   s.version,
+  s.source_name,
+  s.source_url,
   coalesce(r.avg_rating, 0)::numeric(3,1)                      as avg_rating,
   coalesce(r.review_count, 0)::integer                         as review_count,
   s.created_at,
