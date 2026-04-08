@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Sparkles, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function Login() {
   const { login, loginWithGoogle } = useApp()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/library'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -19,7 +21,7 @@ export default function Login() {
     const result = await login(email, password)
     setSubmitting(false)
     if (result.success) {
-      navigate('/library')
+      navigate(redirectTo)
     } else {
       setError(result.error || 'Invalid credentials. Please try again.')
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   Star, Download, Heart, Copy, Check, ChevronRight, Lock,
   Share2, Calendar, RefreshCw, Loader2, Clipboard, ArrowRight,
@@ -20,6 +20,8 @@ export default function SkillDetail() {
   const [dailyStats, setDailyStats] = useState([])
   const [loading, setLoading] = useState(true)
   const { user, toggleSave, isSkillSaved, canSaveMore, isPro } = useApp()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [copied, setCopied] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
   const [activeTab, setActiveTab] = useState('copy')
@@ -80,6 +82,10 @@ export default function SkillDetail() {
 
   const handleDownload = () => {
     if (!canView) return
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname)}&action=download`)
+      return
+    }
     const blob = new Blob([skill.skillCode], { type: 'text/markdown;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
